@@ -140,7 +140,7 @@ fi
 
 topic "Copying runtime cache"
 mkdir -p "${BUILD_DIR}/.apt" 
-cp -av "${CACHE_DIR}/runtime/"* "${BUILD_DIR}/.apt/"
+cp -a "${CACHE_DIR}/runtime/"* "${BUILD_DIR}/.apt/"
 
 topic "Writing profile script"
 mkdir -p "$BUILD_DIR/.profile.d"
