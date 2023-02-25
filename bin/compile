@@ -103,7 +103,7 @@ if [ ! -f "$CACHE_DIR/PURGED_CACHE_V1" ]; then
   touch "$CACHE_DIR/PURGED_CACHE_V1"
 fi
 
-topic "Installing Google Chrome from the $channel channel."
+topic "Google Chrome is from the $channel channel."
 
 CURL_PACKAGES="$CURL_PACKAGES https://dl.google.com/linux/direct/google-chrome-${channel}_current_amd64.deb"
 
