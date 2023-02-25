@@ -99,6 +99,7 @@ if [ ! -f "$CACHE_DIR/PURGED_CACHE_V1" ]; then
   rm -rf "$CACHE_DIR/apt"
   rm -rf "$CACHE_DIR/archives"
   rm -rf "$CACHE_DIR/lists"
+  rm -rf "$CACHE_DIR/runtime"
   touch "$CACHE_DIR/PURGED_CACHE_V1"
 fi
 
@@ -118,52 +119,52 @@ topic "Updating apt caches"
 apt-get $APT_OPTIONS update | indent
 
 for PACKAGE in $CURL_PACKAGES; do
-    PACKAGE_NAME=$(basename "$PACKAGE" .deb)
-    PACKAGE_FILE=$APT_CACHE_DIR/archives/$PACKAGE_NAME.deb
+  PACKAGE_NAME=$(basename "$PACKAGE" .deb)
+  PACKAGE_FILE=$APT_CACHE_DIR/archives/$PACKAGE_NAME.deb
 
-    topic "Fetching $PACKAGE"
-    curl -s -L -z "$PACKAGE_FILE" -o "$PACKAGE_FILE" "$PACKAGE" 2>&1 | indent
+  topic "Fetching $PACKAGE"
+  curl -s -L -z "$PACKAGE_FILE" -o "$PACKAGE_FILE" "$PACKAGE" 2>&1 | indent
 done
 
-topic "Fetching .debs for $PACKAGE"
-apt-get $APT_OPTIONS --assume-yes --download-only install "$APT_PACKAGES" | indent
+topic "Fetching .debs for $APT_PACKAGES"
+apt-get $APT_OPTIONS --assume-yes --download-only install $(echo "${APT_PACKAGES}" | xargs) | indent
 
-mkdir -p $BUILD_DIR/.apt
+mkdir -p "$CACHE_DIR/runtime/.apt"
 
 for DEB in $(ls -1 $APT_CACHE_DIR/archives/*.deb); do
-  topic "Installing $(basename $DEB)"
-  dpkg -x "$DEB" "$BUILD_DIR/.apt/"
+  topic "Installing $(basename "$DEB")"
+  dpkg -x "$DEB" "$CACHE_DIR/runtime/.apt/"
 done
 
 topic "Writing profile script"
 mkdir -p "$BUILD_DIR/.profile.d"
 cat <<EOF >"$BUILD_DIR/.profile.d/000_apt.sh"
-export PATH="\$HOME/.apt/usr/bin:\$PATH"
-export LD_LIBRARY_PATH="\$HOME/.apt/usr/lib/x86_64-linux-gnu:\$HOME/.apt/usr/lib/i386-linux-gnu:\$HOME/.apt/usr/lib:\$LD_LIBRARY_PATH"
-export LIBRARY_PATH="\$HOME/.apt/usr/lib/x86_64-linux-gnu:\$HOME/.apt/usr/lib/i386-linux-gnu:\$HOME/.apt/usr/lib:\$LIBRARY_PATH"
-export INCLUDE_PATH="\$HOME/.apt/usr/include:\$HOME/.apt/usr/include/x86_64-linux-gnu:\$INCLUDE_PATH"
+export PATH="$CACHE_DIR/runtime/.apt/usr/bin:\$PATH"
+export LD_LIBRARY_PATH="$CACHE_DIR/runtime/.apt/usr/lib/x86_64-linux-gnu:$CACHE_DIR/runtime/.apt/usr/lib/i386-linux-gnu:$CACHE_DIR/runtime/.apt/usr/lib:\$LD_LIBRARY_PATH"
+export LIBRARY_PATH="$CACHE_DIR/runtime/.apt/usr/lib/x86_64-linux-gnu:$CACHE_DIR/runtime/.apt/usr/lib/i386-linux-gnu:$CACHE_DIR/runtime/.apt/usr/lib:\$LIBRARY_PATH"
+export INCLUDE_PATH="$CACHE_DIR/runtime/.apt/usr/include:$CACHE_DIR/runtime/.apt/usr/include/x86_64-linux-gnu:\$INCLUDE_PATH"
 export CPATH="\$INCLUDE_PATH"
 export CPPPATH="\$INCLUDE_PATH"
-export PKG_CONFIG_PATH="\$HOME/.apt/usr/lib/x86_64-linux-gnu/pkgconfig:\$HOME/.apt/usr/lib/i386-linux-gnu/pkgconfig:\$HOME/.apt/usr/lib/pkgconfig:\$PKG_CONFIG_PATH"
+export PKG_CONFIG_PATH="$CACHE_DIR/runtime/.apt/usr/lib/x86_64-linux-gnu/pkgconfig:$CACHE_DIR/runtime/.apt/usr/lib/i386-linux-gnu/pkgconfig:$CACHE_DIR/runtime/.apt/usr/lib/pkgconfig:\$PKG_CONFIG_PATH"
 EOF
 
-export PATH="$BUILD_DIR/.apt/usr/bin:$PATH"
-export LD_LIBRARY_PATH="$BUILD_DIR/.apt/usr/lib/x86_64-linux-gnu:$BUILD_DIR/.apt/usr/lib/i386-linux-gnu:$BUILD_DIR/.apt/usr/lib:$LD_LIBRARY_PATH"
-export LIBRARY_PATH="$BUILD_DIR/.apt/usr/lib/x86_64-linux-gnu:$BUILD_DIR/.apt/usr/lib/i386-linux-gnu:$BUILD_DIR/.apt/usr/lib:$LIBRARY_PATH"
-export INCLUDE_PATH="$BUILD_DIR/.apt/usr/include:$BUILD_DIR/.apt/usr/include/x86_64-linux-gnu:$INCLUDE_PATH"
+export PATH="$CACHE_DIR/runtime/.apt/usr/bin:$PATH"
+export LD_LIBRARY_PATH="$CACHE_DIR/runtime/.apt/usr/lib/x86_64-linux-gnu:$CACHE_DIR/runtime/.apt/usr/lib/i386-linux-gnu:$CACHE_DIR/runtime/.apt/usr/lib:$LD_LIBRARY_PATH"
+export LIBRARY_PATH="$CACHE_DIR/runtime/.apt/usr/lib/x86_64-linux-gnu:$CACHE_DIR/runtime/.apt/usr/lib/i386-linux-gnu:$CACHE_DIR/runtime/.apt/usr/lib:$LIBRARY_PATH"
+export INCLUDE_PATH="$CACHE_DIR/runtime/.apt/usr/include:$CACHE_DIR/runtime/.apt/usr/include/x86_64-linux-gnu:$INCLUDE_PATH"
 export CPATH="$INCLUDE_PATH"
 export CPPPATH="$INCLUDE_PATH"
-export PKG_CONFIG_PATH="$BUILD_DIR/.apt/usr/lib/x86_64-linux-gnu/pkgconfig:$BUILD_DIR/.apt/usr/lib/i386-linux-gnu/pkgconfig:$BUILD_DIR/.apt/usr/lib/pkgconfig:$PKG_CONFIG_PATH"
+export PKG_CONFIG_PATH="$CACHE_DIR/runtime/.apt/usr/lib/x86_64-linux-gnu/pkgconfig:$CACHE_DIR/runtime/.apt/usr/lib/i386-linux-gnu/pkgconfig:$CACHE_DIR/runtime/.apt/usr/lib/pkgconfig:$PKG_CONFIG_PATH"
 
 #give environment to later buildpacks
 export | grep -E -e ' (PATH|LD_LIBRARY_PATH|LIBRARY_PATH|INCLUDE_PATH|CPATH|CPPPATH|PKG_CONFIG_PATH)='  > "$LP_DIR/export"
 
 topic "Rewrite package-config files"
-find "$BUILD_DIR/.apt" -type f -ipath '*/pkgconfig/*.pc' -print0 | xargs -0 --no-run-if-empty -n 1 sed -i -e 's!^prefix=\(.*\)$!prefix='"$BUILD_DIR"'/.apt\1!g'
+find "$CACHE_DIR/runtime/.apt" -type f -ipath '*/pkgconfig/*.pc' -print0 | xargs -0 --no-run-if-empty -n 1 sed -i -e 's!^prefix=\(.*\)$!prefix='"$CACHE_DIR"'/runtime/.apt\1!g'
 
 topic "Creating google-chrome shims"
 
-BIN_DIR=$BUILD_DIR/.apt/usr/bin
+BIN_DIR=$CACHE_DIR/runtime/.apt/usr/bin
 
 rm "$BIN_DIR/$SHIM"
 cat <<EOF >"$BIN_DIR/$SHIM"
@@ -173,11 +174,11 @@ cat <<EOF >"$BIN_DIR/$SHIM"
 unset LD_PRELOAD
 
 if [ \$1 = "--version" ]; then
-  exec \$HOME/.apt/opt/google/$BIN --version
+  exec $CACHE_DIR/runtime/.apt/opt/google/$BIN --version
 elif [ \$1 = "--product-version" ]; then
-  exec \$HOME/.apt/opt/google/$BIN --product-version
+  exec $CACHE_DIR/runtime/.apt/opt/google/$BIN --product-version
 else
-  exec \$HOME/.apt/opt/google/$BIN --headless --no-sandbox --disable-gpu --remote-debugging-port=9222 "\$@"
+  exec $CACHE_DIR/runtime/.apt/opt/google/$BIN --headless --no-sandbox --disable-gpu --remote-debugging-port=9222 "\$@"
 fi
 EOF
 chmod +x "$BIN_DIR/$SHIM"
@@ -186,6 +187,6 @@ cp "$BIN_DIR/$SHIM" "$BIN_DIR/google-chrome"
 # export the chrome binary location, so it's easier to tell chromedriver
 # about the non-standard location
 cat <<EOF >"$BUILD_DIR/.profile.d/010_google-chrome.sh"
-export GOOGLE_CHROME_BIN="\$HOME/.apt/opt/google/$BIN"
-export GOOGLE_CHROME_SHIM="\$HOME/.apt/usr/bin/$SHIM"
+export GOOGLE_CHROME_BIN="$CACHE_DIR/runtime/.apt/opt/google/$BIN"
+export GOOGLE_CHROME_SHIM="$CACHE_DIR/runtime/.apt/usr/bin/$SHIM"
 EOF
