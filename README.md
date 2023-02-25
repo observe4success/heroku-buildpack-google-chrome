@@ -14,8 +14,8 @@ channel will be used.
 
 ## Shims and Command Line Flags
 
-This buildpack installs shims that always add `--headless`, `--disable-gpu`, 
-`--no-sandbox`, and `--remote-debugging-port=9222` to any `google-chrome` 
+This buildpack installs shims that always add `--headless`, `--disable-gpu`,
+`--no-sandbox`, and `--remote-debugging-port=9222` to any `google-chrome`
 command as you'll have trouble running Chrome on a Heroku dyno otherwise.
 
 You'll have two of these shims on your path: `google-chrome` and
@@ -34,8 +34,8 @@ but that's a read-only filesystem in a Heroku slug. You'll need to tell Selenium
 that the chrome binary is at `/app/.apt/usr/bin/google-chrome` instead.
 
 To make that easier, this buildpack makes `$GOOGLE_CHROME_BIN`, and
-`$GOOGLE_CHROME_SHIM` available as environment variables. With them, you can 
-use the standard location locally and the custom location on Heroku. An example 
+`$GOOGLE_CHROME_SHIM` available as environment variables. With them, you can
+use the standard location locally and the custom location on Heroku. An example
 configuration for Ruby's Capybara:
 
 ```
@@ -58,4 +58,14 @@ Capybara.javascript_driver = :chrome
 
 Make sure you publish this buildpack in the buildpack registry
 
-`heroku buildpacks:publish heroku/google-chrome master`
+### Add the buildpack registry (if needed)
+
+`heroku plugins:install buildpack-registry`
+
+### Register the buildpack (if needed)
+
+`heroku buildpacks:register`
+
+### Publish
+
+`heroku buildpacks:publish observe4success/google-chrome master`
