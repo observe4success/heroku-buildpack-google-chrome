@@ -39,8 +39,8 @@ else
 fi
 
 # Detect requested version
-if [ -f "$ENV_DIR/GOOGLE_CHROME_VERSION" ]; then
-  version=$(cat "$ENV_DIR/GOOGLE_CHROME_VERSION")
+if [ -f "$ENV_DIR/GOOGLE_CHROME_REQUESTED_VERSION" ]; then
+  version=$(cat "$ENV_DIR/GOOGLE_CHROME_REQUESTED_VERSION")
 fi
 
 # Setup bin and shim locations for desired channel, and detect invalid channels
@@ -184,7 +184,7 @@ export INCLUDE_PATH="\$HOME/.apt/usr/include:\$HOME/.apt/usr/include/x86_64-linu
 export CPATH="\$INCLUDE_PATH"
 export CPPPATH="\$INCLUDE_PATH"
 export PKG_CONFIG_PATH="\$HOME/.apt/usr/lib/x86_64-linux-gnu/pkgconfig:\$HOME/.apt/usr/lib/i386-linux-gnu/pkgconfig:\$HOME/.apt/usr/lib/pkgconfig:\$PKG_CONFIG_PATH"
-export GOOGLE_CHROME_VERSION=$("${BUILD_DIR}/.apt/opt/google/$BIN" --product-version)
+export GOOGLE_CHROME_INSTALLED_VERSION=$("${BUILD_DIR}/.apt/opt/google/$BIN" --product-version)
 EOF
 
 #give environment to later buildpacks
